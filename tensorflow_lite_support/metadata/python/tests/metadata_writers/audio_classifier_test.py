@@ -51,27 +51,6 @@ class MetadataWriterTest(tf.test.TestCase):
     expected_json = test_utils.load_file(_JSON_FOR_INFERENCE_DYNAMIC, "r")
     self.assertEqual(metadata_json, expected_json)
 
-  def test_create_for_inference_should_succeed_with_fixed_input_shape_model(
-      self):
-    writer = audio_classifier.MetadataWriter.create_for_inference(
-        test_utils.load_file(_FIXED_INPUT_SIZE_MODEL), _SAMPLE_RATE, _CHANNELS,
-        [_LABEL_FILE],
-        metadata_info.ScoreCalibrationMd(
-            _metadata_fb.ScoreTransformationType.LOG,
-            _DEFAULT_SCORE_CALIBRATION_VALUE, _SCORE_CALIBRATION_FILE))
-
-    metadata_json = writer.get_metadata_json()
-    expected_json = test_utils.load_file(_JSON_FOR_INFERENCE_FIXED, "r")
-    self.assertEqual(metadata_json, expected_json)
-
-  def test_create_from_metadata_info_by_default_should_succeed(self):
-    writer = audio_classifier.MetadataWriter.create_from_metadata_info(
-        test_utils.load_file(_FIXED_INPUT_SIZE_MODEL))
-
-    metadata_json = writer.get_metadata_json()
-    expected_json = test_utils.load_file(_JSON_DEFAULT, "r")
-    self.assertEqual(metadata_json, expected_json)
-
   def test_create_from_metadata_info_by_default_succeeds_for_multihead(self):
     writer = (
         audio_classifier.MetadataWriter.create_from_metadata_info_for_multihead(
