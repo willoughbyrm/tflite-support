@@ -294,6 +294,73 @@ class MetadataPopulatorTest(MetadataTest):
         "File, '{0}', has already been packed.".format(
             os.path.basename(self._file1)), str(error.exception))
 
+  def testLoadAssociatedFileBuffers(self):
+    populator = _metadata.MetadataPopulator.with_model_buffer(self._model_buf)
+    with open(self._file1, "rb") as f:
+      file_buffer = f.read()
+    populator.load_associated_file_buffers([self._file1], [file_buffer])
+    populator.populate()
+
+    packed_files = populator.get_packed_associated_file_list()
+    expected_packed_files = [os.path.basename(self._file1)]
+    self.assertEqual(set(packed_files), set(expected_packed_files))
+
+  def testRepeatedLoadAssociatedFileBuffers(self):
+    with open(self._file1, "rb") as f:
+      file_buffer1 = f.read()
+    with open(self._file2, "rb") as f:
+      file_buffer2 = f.read()
+    populator = _metadata.MetadataPopulator.with_model_file(self._model_file)
+
+    populator.load_associated_file_buffers([self._file1, self._file2],
+                                           [file_buffer1, file_buffer2])
+    # Loads file2 multiple times.
+    populator.load_associated_file_buffers([self._file2], [file_buffer2])
+    populator.populate()
+
+    packed_files = populator.get_packed_associated_file_list()
+    expected_packed_files = [
+        os.path.basename(self._file1),
+        os.path.basename(self._file2)
+    ]
+    self.assertLen(packed_files, 2)
+    self.assertEqual(set(packed_files), set(expected_packed_files))
+
+    # Check if the model buffer read from file is the same as that read from
+    # get_model_buffer().
+    with open(self._model_file, "rb") as f:
+      model_buf_from_file = f.read()
+    model_buf_from_getter = populator.get_model_buffer()
+    self.assertEqual(model_buf_from_file, model_buf_from_getter)
+
+  def testLoadPackedAssociatedFileBuffersFails(self):
+    populator = _metadata.MetadataPopulator.with_model_buffer(self._model_buf)
+    with open(self._file1, "rb") as f:
+      file_buffer = f.read()
+    populator.load_associated_file_buffers([self._file1], [file_buffer])
+    populator.populate()
+
+    # Load file1 again should fail.
+    with self.assertRaises(ValueError) as error:
+      populator.load_associated_file_buffers([self._file1], [file_buffer])
+      populator.populate()
+    self.assertEqual(
+        "File, '{0}', has already been packed.".format(
+            os.path.basename(self._file1)), str(error.exception))
+
+  def testLoadAssociatedFileBuffersWithMismatchedNameAndBufferFails(self):
+    populator = _metadata.MetadataPopulator.with_model_buffer(self._model_buf)
+    with open(self._file1, "rb") as f:
+      file_buffer = f.read()
+
+    # Load two file names but only one file buffer should fail.
+    with self.assertRaises(ValueError) as error:
+      populator.load_associated_file_buffers([self._file1, self._file2],
+                                             [file_buffer])
+    self.assertEqual(
+        "file_names and file_buffers should have the same length, but got 2 vs"
+        " 1.", str(error.exception))
+
   def testGetPackedAssociatedFileList(self):
     populator = _metadata.MetadataPopulator.with_model_buffer(self._model_buf)
     packed_files = populator.get_packed_associated_file_list()
